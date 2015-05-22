@@ -1,0 +1,45 @@
+---
+title: "Untitled"
+author: "J. Bowman"
+date: "05/18/2015"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r, message=FALSE}
+
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", destfile = "pml-training.csv", method = "curl")
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", destfile = "pml-testing.csv", method = "curl")
+
+```
+
+something about the variables and why we left off some of them.
+
+```{r, message=FALSE}
+library(plyr)
+library(dplyr)
+pmlTrain <- read.csv("pml-training.csv", stringsAsFactors = FALSE) %>% select(-(X:cvtd_timestamp), -num_window)
+pmlTest <- read.csv("pml-testing.csv", stringsAsFactors = FALSE) %>% select(-(X:cvtd_timestamp), -num_window)
+novars <- vector()
+for(nm in names(pmlTrain)) novars <- append(novars, var(pmlTrain[[nm]]))
+reTrain <- pmlTrain[,!is.na(novars)]
+reTrain$classe <- pmlTrain$classe
+
+```
+
+```{r, message=FALSE, cache=TRUE}
+require(caret)
+require(gbm)
+ctrl <- trainControl(method = "repeatedcv", number = 5, repeats = 3)
+
+set.seed(90210)
+modFit <- train(classe ~ ., data=reTrain, method="gbm", trControl = ctrl, verbose = FALSE)
+
+```
+
+## References
+
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
