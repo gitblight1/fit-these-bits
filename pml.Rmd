@@ -5,13 +5,13 @@ date: "05/18/2015"
 output: html_document
 ---
 
-
+This project studies a weightlifting activity based on data (available [here](http://groupware.les.inf.puc-rio.br/har)) describing the position of various parts of the arm and weight through the exercise. Training subjects performed the exercise correctly, and then incorrectly in four different ways. The goal of this project is to recognize which method was used each time.
 
 ## Pre-processing
 
-We start by downloading the training data:
+We begin by downloading the training data:
 
-```{r, message=FALSE}
+```{r, message=FALSE, eval=FALSE}
 
 download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", destfile = "pml-training.csv", method = "curl")
 
@@ -20,7 +20,7 @@ download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.
 The data set contains a number of variables with missing or uninformative values (many of the `kurtosis_*` columns, for example, contain only NA and various representations of 0). In addition, columns such as user ID and timestamps are not useful as predictors (particularly since we hope to analyze data outside this particular set of users and times). We will therefore restrict ourselves to numeric (or integer) variables, and only those with nonzero variance. The only character column we will keep is the `classe` column, as that is our outcome.
 
 ```{r, message=FALSE}
-library(dplyr)
+require(dplyr)
 pmlTrain <- read.csv("pml-training.csv", stringsAsFactors = FALSE) %>%
   select(-(X:num_window)) %>%
   mutate(classe = factor(classe))
@@ -56,7 +56,7 @@ The confusion matrix for the (resampled) training data:
 print(fm <- modFit$finalModel$confusion)
 ```
 
-The expected out-of-sample error rate is `r round(100*(1 - sum(diag(fm))/sum(fm[,1:5])), 2)`%.
+Based on this, the estimated out-of-sample error rate is `r round(100*(1 - sum(diag(fm))/sum(fm[,1:5])), 2)`%.
 
 ## References
 
