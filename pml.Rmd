@@ -1,0 +1,63 @@
+---
+title: "Predicting Exercise Activity"
+author: "J. Bowman"
+date: "05/18/2015"
+output: html_document
+---
+
+This project studies a weightlifting activity based on data (available [here](http://groupware.les.inf.puc-rio.br/har)) describing the position of various parts of the arm and weight through the exercise. Training subjects performed the exercise correctly, and then incorrectly in four different ways. The goal of this project is to recognize which method was used each time.
+
+## Pre-processing
+
+We begin by downloading the training data:
+
+```{r, message=FALSE, eval=FALSE}
+
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", destfile = "pml-training.csv", method = "curl")
+
+```
+
+The data set contains a number of variables with missing or uninformative values (many of the `kurtosis_*` columns, for example, contain only NA and various representations of 0). In addition, columns such as user ID and timestamps are not useful as predictors (particularly since we hope to analyze data outside this particular set of users and times). We will therefore restrict ourselves to numeric (or integer) variables, and only those with nonzero variance. The only character column we will keep is the `classe` column, as that is our outcome.
+
+```{r, message=FALSE, warning=FALSE}
+require(dplyr)
+pmlTrain <- read.csv("pml-training.csv", stringsAsFactors = FALSE) %>%
+  select(-(X:num_window)) %>%
+  mutate(classe = factor(classe))
+#classe should be a factor, none of the other character columns should be
+
+novars <- vector()
+for(nm in names(pmlTrain)) novars <- append(novars, var(pmlTrain[[nm]]))
+pmlTrain <- pmlTrain[,!is.na(novars) & novars != 0]
+# this wipes out all of the character columns; making classe into a factor
+# assigns the levels to numeric values, so var returns a result.
+```
+
+## Training
+Training is done using Random Forests. The default method in the `caret` package uses bootstrapping for cross-validation, with 25 resampling iterations.
+
+```{r, message=FALSE, cache=TRUE}
+require(caret)
+require(randomForest)
+
+set.seed(90210)
+modFit <- train(classe ~ ., data=pmlTrain, method = "rf")
+
+```
+
+## Results
+```{r}
+print(modFit)
+```
+
+The confusion matrix for the (resampled) training data:
+
+```{r}
+print(fm <- modFit$finalModel$confusion)
+```
+
+Based on this, the estimated out-of-sample error rate is `r round(100*(1 - sum(diag(fm))/sum(fm[,1:5])), 3)`%.
+
+## References
+
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
